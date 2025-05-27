@@ -10,6 +10,9 @@ import matplotlib.cm as cm
 import shutil
 
 # === [경로 설정] ===
+# IMAGE_PATH = '/home/ohj/GT_4_22/4_19_image/08630.jpg'
+# DEPTH_PATH = '/home/ohj/GT_4_22/4_19_stereo_depth/10448.npy'
+# DEPTH_PATH = '/home/ohj/GT_4_22/4_19_depth/08630.npy'
 SAVE_DIR = '/home/ohj/contour_GT/'
 os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -374,7 +377,13 @@ def visualize_3m_plane_points(mode="stereo"):
     cmap = cm.get_cmap('tab10', 10)
     for h_val in range(1, 6):
         pts = np.array(refined_points_by_height[h_val])
-        bev_pts = pts[:, [0, 2]]
+        
+        # 빈 리스트라도 2D array 형태 유지
+        if pts.ndim != 2:
+            pts = pts.reshape(-1, 3)  # (0, 3) 형태로 만들어줌
+
+        bev_pts = pts[:, [0, 2]]  # X, Z 추출 (shape: Nx2 or 0x2)
+
         height_img_path = f"height_layer_{h_val}m.png"
 
         filtered_bev_pts = interactive_scatter_removal(
@@ -384,14 +393,16 @@ def visualize_3m_plane_points(mode="stereo"):
             title=f"Drag to remove - {h_val}m",
             height_image_path=height_img_path
         )
+
         # 필터링된 점들을 다시 3D로 복원 (X는 고정, Z는 고정, Y는 기존에서 추정)
         filtered_3d_pts = []
         for x, z in filtered_bev_pts:
             matches = pts[(np.abs(pts[:, 0] - x) < 1e-3) & (np.abs(pts[:, 2] - z) < 1e-3)]
             if len(matches) > 0:
                 filtered_3d_pts.append(matches[0])
-
+        
         refined_points_by_height[h_val] = np.array(filtered_3d_pts)
+
     #     if len(pts) == 0:
     #         continue
     #     xs = pts[:, 0]
@@ -551,6 +562,8 @@ if __name__ == "__main__":
     # === 이미지 폴더 설정 ===
     IMAGE_FOLDER = "/home/ohj/GT_4_22/4_19_image"
     DEPTH_FOLDER = "/home/ohj/GT_4_22/4_19_depth"
+    # IMAGE_FOLDER = "/home/ohj/contour_GT_2/images"
+    # DEPTH_FOLDER = "/home/ohj/contour_GT_2/depths"
     MASK_FOLDER = "/home/ohj/"
 
     # === 이미지 파일 목록 ===
